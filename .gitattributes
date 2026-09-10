@@ -1,0 +1,3 @@
+# Scripts de shell rodam dentro de containers Linux: CRLF quebra o shebang
+# e o `set -eu` com um 'illegal option' obscuro. Forca LF mesmo no Windows.
+*.sh text eol=lf

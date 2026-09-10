@@ -1,0 +1,316 @@
+{
+ "realm": "ufc",
+ "displayName": "UFC Engenharia",
+ "enabled": true,
+ "sslRequired": "none",
+ "registrationAllowed": false,
+ "resetPasswordAllowed": true,
+ "loginWithEmailAllowed": true,
+ "duplicateEmailsAllowed": false,
+ "verifyEmail": false,
+ "editUsernameAllowed": false,
+ "bruteForceProtected": true,
+ "failureFactor": 10,
+ "waitIncrementSeconds": 60,
+ "maxFailureWaitSeconds": 900,
+ "accessTokenLifespan": 300,
+ "ssoSessionIdleTimeout": 28800,
+ "ssoSessionMaxLifespan": 36000,
+ "offlineSessionIdleTimeout": 2592000,
+ "groups": [
+  {
+   "name": "apps",
+   "path": "/apps",
+   "subGroups": [
+    {
+     "name": "inventario",
+     "path": "/apps/inventario"
+    },
+    {
+     "name": "receita",
+     "path": "/apps/receita"
+    },
+    {
+     "name": "despesa",
+     "path": "/apps/despesa"
+    },
+    {
+     "name": "controle-despesa",
+     "path": "/apps/controle-despesa"
+    }
+   ]
+  },
+  {
+   "name": "admins",
+   "path": "/admins"
+  }
+ ],
+ "clients": [
+  {
+   "clientId": "portal-web",
+   "name": "Portal UFC",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": false,
+   "secret": "${PORTAL_CLIENT_SECRET}",
+   "standardFlowEnabled": true,
+   "directAccessGrantsEnabled": false,
+   "serviceAccountsEnabled": true,
+   "implicitFlowEnabled": false,
+   "redirectUris": [
+    "http://${HOST_IP}:${PORTAL_PORT}/api/auth/callback"
+   ],
+   "webOrigins": [
+    "http://${HOST_IP}:${PORTAL_PORT}"
+   ],
+   "attributes": {
+    "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
+   },
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  },
+  {
+   "clientId": "inventario-web",
+   "name": "Gerenciamento de Inventario",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": false,
+   "secret": "${INVENTARIO_CLIENT_SECRET}",
+   "standardFlowEnabled": true,
+   "directAccessGrantsEnabled": false,
+   "serviceAccountsEnabled": false,
+   "implicitFlowEnabled": false,
+   "redirectUris": [
+    "http://${HOST_IP}:${INVENTARIO_PORT}/api/auth/callback"
+   ],
+   "webOrigins": [
+    "http://${HOST_IP}:${INVENTARIO_PORT}"
+   ],
+   "attributes": {
+    "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
+   },
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    },
+    {
+     "name": "audience-inventario-api",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-audience-mapper",
+     "consentRequired": false,
+     "config": {
+      "included.custom.audience": "inventario-api",
+      "access.token.claim": "true",
+      "id.token.claim": "false",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  },
+  {
+   "clientId": "receita-web",
+   "name": "Gerenciamento de Receita",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": false,
+   "secret": "${RECEITA_CLIENT_SECRET}",
+   "standardFlowEnabled": true,
+   "directAccessGrantsEnabled": false,
+   "serviceAccountsEnabled": false,
+   "implicitFlowEnabled": false,
+   "redirectUris": [
+    "http://${HOST_IP}:${RECEITA_PORT}/users/auth/keycloak/callback"
+   ],
+   "webOrigins": [
+    "http://${HOST_IP}:${RECEITA_PORT}"
+   ],
+   "attributes": {
+    "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
+   },
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  },
+  {
+   "clientId": "despesa-web",
+   "name": "Sistema de Despesas",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": false,
+   "secret": "${DESPESA_CLIENT_SECRET}",
+   "standardFlowEnabled": true,
+   "directAccessGrantsEnabled": false,
+   "serviceAccountsEnabled": false,
+   "implicitFlowEnabled": false,
+   "redirectUris": [
+    "http://${HOST_IP}:${DESPESA_PORT}/api/auth/callback"
+   ],
+   "webOrigins": [
+    "http://${HOST_IP}:${DESPESA_PORT}"
+   ],
+   "attributes": {
+    "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
+   },
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    },
+    {
+     "name": "audience-despesa-api",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-audience-mapper",
+     "consentRequired": false,
+     "config": {
+      "included.custom.audience": "despesa-api",
+      "access.token.claim": "true",
+      "id.token.claim": "false",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  },
+  {
+   "clientId": "controle-despesa-web",
+   "name": "Controle de Despesa",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": false,
+   "secret": "${CONTROLE_DESPESA_CLIENT_SECRET}",
+   "standardFlowEnabled": true,
+   "directAccessGrantsEnabled": false,
+   "serviceAccountsEnabled": false,
+   "implicitFlowEnabled": false,
+   "redirectUris": [
+    "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}/auth/callback"
+   ],
+   "webOrigins": [
+    "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}"
+   ],
+   "attributes": {
+    "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
+   },
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  },
+  {
+   "clientId": "despesa-agent",
+   "name": "Agente Windows do Sistema de Despesas",
+   "description": "Roda na maquina de cada usuario, fora de container. Nao ha navegador nem callback: autentica por Direct Access Grants (usuario+senha direto no token endpoint).",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": true,
+   "standardFlowEnabled": false,
+   "directAccessGrantsEnabled": true,
+   "serviceAccountsEnabled": false,
+   "implicitFlowEnabled": false,
+   "redirectUris": [],
+   "webOrigins": [],
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    },
+    {
+     "name": "audience-despesa-api",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-audience-mapper",
+     "consentRequired": false,
+     "config": {
+      "included.custom.audience": "despesa-api",
+      "access.token.claim": "true",
+      "id.token.claim": "false",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  }
+ ],
+ "users": [
+  {
+   "username": "service-account-portal-web",
+   "enabled": true,
+   "serviceAccountClientId": "portal-web",
+   "clientRoles": {
+    "realm-management": [
+     "view-users",
+     "query-users",
+     "query-groups",
+     "manage-users"
+    ]
+   }
+  }
+ ]
+}

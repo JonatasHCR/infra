@@ -1,0 +1,122 @@
+name: ufc_infra
+
+# Keycloak — o provedor de identidade unico das tres aplicacoes.
+# Sem DNS e sem TLS: tudo e alcancado por http://${HOST_IP}:porta, e o issuer do
+# realm e essa mesma string para o navegador E para os containers.
+
+services:
+  keycloak-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME:-keycloak}
+      POSTGRES_USER: ${KC_DB_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?defina KC_DB_PASSWORD no .env}
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KC_DB_USER:-keycloak}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Substitui ${HOST_IP} e os client secrets no realm antes do Keycloak subir.
+  # Roda ate o fim e sai; o Keycloak so parte depois disso (service_completed_successfully).
+  keycloak-config:
+    image: alpine:3.20
+    environment:
+      HOST_IP: ${HOST_IP:?defina HOST_IP no .env — e o IP fixo do servidor}
+      PORTAL_PORT: ${PORTAL_PORT:-3080}
+      INVENTARIO_PORT: ${INVENTARIO_PORT:-3030}
+      RECEITA_PORT: ${RECEITA_PORT:-3040}
+      DESPESA_PORT: ${DESPESA_PORT:-3010}
+      CONTROLE_DESPESA_PORT: ${CONTROLE_DESPESA_PORT:-3050}
+      PORTAL_CLIENT_SECRET: ${PORTAL_CLIENT_SECRET:?defina no .env}
+      INVENTARIO_CLIENT_SECRET: ${INVENTARIO_CLIENT_SECRET:?defina no .env}
+      RECEITA_CLIENT_SECRET: ${RECEITA_CLIENT_SECRET:?defina no .env}
+      DESPESA_CLIENT_SECRET: ${DESPESA_CLIENT_SECRET:?defina no .env}
+      CONTROLE_DESPESA_CLIENT_SECRET: ${CONTROLE_DESPESA_CLIENT_SECRET:?defina no .env}
+    volumes:
+      - ./keycloak/realm-ufc.json:/template/realm-ufc.json:ro
+      - ./keycloak/render-realm.sh:/render/render-realm.sh:ro
+      - keycloak_import:/out
+    # `tr` antes de rodar: um editor no Windows grava o script com CRLF e o
+    # /bin/sh do Alpine falha com um "illegal option" obscuro.
+    command:
+      - /bin/sh
+      - -c
+      - tr -d '\r' < /render/render-realm.sh > /tmp/render.sh && sh /tmp/render.sh
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: ${KC_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+
+      # HTTP puro precisa ser explicito — o Keycloak recusa por padrao.
+      KC_HTTP_ENABLED: "true"
+      # A string que vira o `issuer`.  Se isto estiver errado, o .well-known
+      # anuncia um issuer que os apps nao conseguem validar e NADA funciona.
+      KC_HOSTNAME: http://${HOST_IP}:8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+
+      # So usados no primeiro boot, para criar a conta de admin do console.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?defina KC_ADMIN_PASSWORD no .env}
+    volumes:
+      - keycloak_import:/opt/keycloak/data/import:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+      keycloak-config:
+        condition: service_completed_successfully
+    healthcheck:
+      # A imagem nao tem curl nem wget; bash tem /dev/tcp.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\nHost: localhost\nConnection: close\n\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      # O primeiro boot faz a augmentation do Quarkus (~80s) e cria o schema do
+      # banco. Com 60s o compose desiste antes de o Keycloak abrir a porta e
+      # derruba tudo que depende dele.
+      start_period: 180s
+    restart: unless-stopped
+
+  # Portal — implementacao de referencia do BFF: o fluxo OIDC roda todo no
+  # servidor e o navegador so recebe um cookie de sessao httpOnly cifrado.
+  portal:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+    environment:
+      HOST_IP: ${HOST_IP}
+      PORT: "3080"
+      # O catalogo do portal monta as URLs dos sistemas com isto.
+      INVENTARIO_PORT: ${INVENTARIO_PORT:-3030}
+      RECEITA_PORT: ${RECEITA_PORT:-3040}
+      DESPESA_PORT: ${DESPESA_PORT:-3010}
+      CONTROLE_DESPESA_PORT: ${CONTROLE_DESPESA_PORT:-3050}
+      OIDC_CLIENT_ID: portal-web
+      OIDC_CLIENT_SECRET: ${PORTAL_CLIENT_SECRET}
+      SESSION_SECRET: ${PORTAL_SESSION_SECRET:?defina PORTAL_SESSION_SECRET no .env}
+      # Cookie nao distingue porta e os quatro apps vivem no mesmo host: o
+      # navegador manda os cookies de todos para cada um, e o limite padrao de
+      # 16 KB estoura no quarto login com um 431.
+      NODE_OPTIONS: "--max-http-header-size=65536"
+    ports:
+      - "${PORTAL_PORT:-3080}:3080"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  keycloak_db_data:
+  keycloak_import:

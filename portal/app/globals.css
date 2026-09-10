@@ -1,0 +1,101 @@
+@import 'tailwindcss';
+
+/*
+ * Paleta do portal — direção "sóbrio corporativo".
+ *
+ * O vermelho é o da UFC Engenharia, o mesmo que a receita já usa: o portal
+ * precisa parecer a porta de entrada dos sistemas, não um produto de outra
+ * empresa. Ele aparece só na marca e na borda esquerda dos cartões; todo o
+ * resto é neutro de viés levemente frio.
+ *
+ * O tema tem TRÊS estados, não dois. A pessoa pode escolher claro ou escuro
+ * (e aí o <html> ganha data-theme), ou deixar no padrão — e nesse caso nada é
+ * carimbado, só o prefers-color-scheme decide. Por isso o :root nu carrega a
+ * paleta clara COMPLETA, e os dois blocos abaixo redefinem apenas os tokens.
+ * Um valor que só existisse dentro de um deles não se aplicaria no estado sem
+ * carimbo — que é o da maioria dos visitantes.
+ */
+:root {
+  --ground: #fcfcfd;
+  --surface: #ffffff;
+  --sunken: #f4f5f7;
+  --ink: #16171a;
+  --muted: #6b6f76;
+  --faint: #9a9ea6;
+  --hairline: #e4e5e8;
+  --brand: #a61c21;
+  --brand-soft: #f6eaea;
+  --aviso: #92400e;
+  --aviso-soft: #fef6e7;
+  color-scheme: light;
+}
+
+/* Escuro por preferência do sistema — a menos que a pessoa tenha pedido claro. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ground: #121316;
+    --surface: #1a1c20;
+    --sunken: #212429;
+    --ink: #edeef0;
+    --muted: #9ba0a8;
+    --faint: #6d727a;
+    --hairline: #2b2e34;
+    /* O #a61c21 não tem contraste suficiente sobre fundo escuro. */
+    --brand: #e2645c;
+    --brand-soft: #2a1c1d;
+    --aviso: #e0a45c;
+    --aviso-soft: #2a2318;
+    color-scheme: dark;
+  }
+}
+
+/* Escuro por escolha explícita — vence o sistema no outro sentido. */
+:root[data-theme='dark'] {
+  --ground: #121316;
+  --surface: #1a1c20;
+  --sunken: #212429;
+  --ink: #edeef0;
+  --muted: #9ba0a8;
+  --faint: #6d727a;
+  --hairline: #2b2e34;
+  --brand: #e2645c;
+  --brand-soft: #2a1c1d;
+  --aviso: #e0a45c;
+  --aviso-soft: #2a2318;
+  color-scheme: dark;
+}
+
+/*
+ * `inline` faz o Tailwind emitir `var(--ground)` em vez de congelar o valor —
+ * é o que permite `bg-ground` seguir a troca de tema em tempo de execução.
+ */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-hairline: var(--hairline);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-aviso: var(--aviso);
+  --color-aviso-soft: var(--aviso-soft);
+
+  --font-display: var(--fonte-display), 'Segoe UI', system-ui, sans-serif;
+  --font-sans: var(--fonte-corpo), 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
