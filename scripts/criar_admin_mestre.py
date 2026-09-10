@@ -41,12 +41,15 @@ from import_users import REALM, Keycloak, ler_env  # noqa: E402
 
 INFRA = Path(__file__).resolve().parent.parent
 
-# Os quatro grupos. `/admins` abre a tela de gestao de acessos do portal; os
-# tres `/apps/*` sao o que faz os cartoes aparecerem e o que os backends exigem
-# de todo mundo.  A conta mestra dispensa esses tres para ENTRAR, mas sem eles o
-# portal nao mostraria os atalhos — e uma tela inicial vazia para quem pode tudo
-# seria so confusao.
-GRUPOS = ["/admins", "/apps/inventario", "/apps/receita", "/apps/despesa"]
+# A conta mestra dispensa os `/apps/*` para ENTRAR, mas o portal filtra os
+# cartoes so por grupo: sem eles a tela inicial fica vazia para quem pode tudo.
+GRUPOS = [
+    "/admins",
+    "/apps/inventario",
+    "/apps/receita",
+    "/apps/despesa",
+    "/apps/controle-despesa",
+]
 
 
 def main() -> int:
@@ -127,9 +130,9 @@ def main() -> int:
 
     print(
         "\nPronto. Entre pelo portal com esse email.\n"
-        "Os tres sistemas so reconhecem a conta depois que ADMIN_MESTRE_EMAIL\n"
+        "Os sistemas so reconhecem a conta depois que ADMIN_MESTRE_EMAIL\n"
         "estiver no .env de cada um — rode `python scripts/sync_host_ip.py`\n"
-        "e recrie os containers dos tres."
+        "e recrie os containers."
     )
     return 0
 
