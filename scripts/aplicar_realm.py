@@ -54,7 +54,11 @@ def main() -> int:
         if vivo is None:
             pendencias.append(("client", nome, client))
             continue
-        if sorted(vivo.get("redirectUris") or []) != sorted(client.get("redirectUris") or []):
+        # O `name` e visivel: e o rotulo do "voltar" no Account Console.
+        if (
+            sorted(vivo.get("redirectUris") or []) != sorted(client.get("redirectUris") or [])
+            or vivo.get("name") != client.get("name")
+        ):
             pendencias.append(("redirect", nome, (vivo, client)))
 
     if not pendencias:
@@ -87,8 +91,9 @@ def main() -> int:
             atualizado = dict(vivo)
             atualizado["redirectUris"] = querido.get("redirectUris") or []
             atualizado["webOrigins"] = querido.get("webOrigins") or []
+            atualizado["name"] = querido.get("name")
             kc.put(f"/clients/{vivo['id']}", atualizado)
-            print(f"  corrigidos redirect URIs de {nome}")
+            print(f"  corrigidos redirect URIs / nome de {nome}")
 
     print("\npronto. Confira com: python scripts/conferir_realm_vivo.py")
     return 0

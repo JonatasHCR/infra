@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 
 import { AlternadorDeTema } from '@/components/tema'
 import { GRUPO_ADMIN } from '@/lib/admin'
-import { endpoints } from '@/lib/oidc'
+import { baseUrl, clientId, endpoints } from '@/lib/oidc'
 import { lerSessao } from '@/lib/session'
 import { sistemasDoUsuario } from '@/lib/sistemas'
 
@@ -15,6 +15,16 @@ import { sistemasDoUsuario } from '@/lib/sistemas'
  */
 
 export const dynamic = 'force-dynamic'
+
+// referrer/referrer_uri: sem eles o Account Console nao oferece volta. O
+// referrer_uri precisa estar nos redirectUris do client, ou vem ignorado.
+function urlDaConta(): string {
+  const params = new URLSearchParams({
+    referrer: clientId(),
+    referrer_uri: `${baseUrl()}/`,
+  })
+  return `${endpoints.conta()}?${params}`
+}
 
 export default async function Pagina({
   searchParams,
@@ -43,7 +53,7 @@ export default async function Pagina({
 
         <nav className="flex items-center gap-4 text-sm">
           {ehAdmin && <Elo href="/admin">Acessos</Elo>}
-          <Elo href={endpoints.conta()}>Minha conta</Elo>
+          <Elo href={urlDaConta()}>Minha conta</Elo>
           <Elo href="/api/auth/logout">Sair</Elo>
           <AlternadorDeTema />
         </nav>

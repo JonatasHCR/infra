@@ -58,7 +58,8 @@
    "serviceAccountsEnabled": true,
    "implicitFlowEnabled": false,
    "redirectUris": [
-    "http://${HOST_IP}:${PORTAL_PORT}/api/auth/callback"
+    "http://${HOST_IP}:${PORTAL_PORT}/api/auth/callback",
+    "http://${HOST_IP}:${PORTAL_PORT}/"
    ],
    "webOrigins": [
     "http://${HOST_IP}:${PORTAL_PORT}"
@@ -95,7 +96,8 @@
    "serviceAccountsEnabled": false,
    "implicitFlowEnabled": false,
    "redirectUris": [
-    "http://${HOST_IP}:${INVENTARIO_PORT}/api/auth/callback"
+    "http://${HOST_IP}:${INVENTARIO_PORT}/api/auth/callback",
+    "http://${HOST_IP}:${INVENTARIO_PORT}/"
    ],
    "webOrigins": [
     "http://${HOST_IP}:${INVENTARIO_PORT}"
@@ -144,7 +146,8 @@
    "serviceAccountsEnabled": false,
    "implicitFlowEnabled": false,
    "redirectUris": [
-    "http://${HOST_IP}:${RECEITA_PORT}/users/auth/keycloak/callback"
+    "http://${HOST_IP}:${RECEITA_PORT}/users/auth/keycloak/callback",
+    "http://${HOST_IP}:${RECEITA_PORT}/"
    ],
    "webOrigins": [
     "http://${HOST_IP}:${RECEITA_PORT}"
@@ -171,7 +174,7 @@
   },
   {
    "clientId": "despesa-web",
-   "name": "Sistema de Despesas",
+   "name": "Radar",
    "enabled": true,
    "protocol": "openid-connect",
    "publicClient": false,
@@ -181,7 +184,8 @@
    "serviceAccountsEnabled": false,
    "implicitFlowEnabled": false,
    "redirectUris": [
-    "http://${HOST_IP}:${DESPESA_PORT}/api/auth/callback"
+    "http://${HOST_IP}:${DESPESA_PORT}/api/auth/callback",
+    "http://${HOST_IP}:${DESPESA_PORT}/"
    ],
    "webOrigins": [
     "http://${HOST_IP}:${DESPESA_PORT}"
@@ -230,7 +234,8 @@
    "serviceAccountsEnabled": false,
    "implicitFlowEnabled": false,
    "redirectUris": [
-    "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}/auth/callback"
+    "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}/auth/callback",
+    "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}/"
    ],
    "webOrigins": [
     "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}"
