@@ -11,7 +11,7 @@ Uso:
     python scripts/corrigir_acentos.py                    # relatorio, nao grava
     python scripts/corrigir_acentos.py --aplicar          # grava (faz dump antes)
     python scripts/corrigir_acentos.py --sistema receita  # so um sistema
-    python scripts/corrigir_acentos.py --prod             # usa docker-compose.prod.yml
+    python scripts/corrigir_acentos.py --prod             # compose de producao (como o stack.ps1 -Prod)
     python scripts/corrigir_acentos.py --dicionario extra.txt
 """
 
@@ -35,15 +35,27 @@ PROJETOS = INFRA.parent
 @dataclass(frozen=True)
 class Fonte:
     rotulo: str
-    diretorio: Path
+    pastas: tuple[str, ...]  # nome na producao primeiro, depois o da maquina de desenvolvimento
     servico: str
+    compose_prod: tuple[str, ...]  # mesmos arquivos do stack.ps1 com -Prod
+
+    @property
+    def diretorio(self) -> Path:
+        for nome in self.pastas:
+            if (PROJETOS / nome).is_dir():
+                return PROJETOS / nome
+        return PROJETOS / self.pastas[0]
 
 
 FONTES = [
-    Fonte("controle_despesa", PROJETOS / "Controle_Despesa", "db"),
-    Fonte("radar", PROJETOS / "Sistema_Despesa", "db"),
-    Fonte("inventario", PROJETOS / "Gerenciamento_de_inventario", "postgres"),
-    Fonte("receita", PROJETOS / "Gerencimento_de_receita", "db"),
+    Fonte("controle_despesa", ("Controle_Despesa",), "db",
+          ("docker-compose.yml", "docker-compose.prod.yml")),
+    Fonte("radar", ("Sistema-Despesa", "Sistema_Despesa"), "db",
+          ("docker-compose.yml", "docker-compose.prod.yml")),
+    Fonte("inventario", ("Gerenciamento_de_Iventario", "Gerenciamento_de_inventario"), "postgres",
+          ()),
+    Fonte("receita", ("Gerenciamento_de_Receita", "Gerencimento_de_receita"), "db",
+          ("docker-compose.prod.yml",)),
 ]
 
 TABELAS_IGNORADAS = {"alembic_version", "schema_migrations", "ar_internal_metadata"}
@@ -111,7 +123,7 @@ def construir_argumentos() -> argparse.Namespace:
     p.add_argument("--aplicar", action="store_true", help="grava as correcoes no banco")
     p.add_argument("--sistema", choices=[f.rotulo for f in FONTES], action="append",
                    help="sistema a corrigir (pode repetir); padrao: todos")
-    p.add_argument("--prod", action="store_true", help="usa docker-compose.prod.yml")
+    p.add_argument("--prod", action="store_true", help="usa os compose de producao")
     p.add_argument("--dicionario", type=Path, help="arquivo com palavras acentuadas extras")
     p.add_argument("--saida", type=Path, default=INFRA / "relatorios_acentos",
                    help="pasta dos relatorios CSV")
@@ -125,7 +137,8 @@ def construir_argumentos() -> argparse.Namespace:
 def compose(fonte: Fonte, prod: bool) -> list[str]:
     cmd = ["docker", "compose"]
     if prod:
-        cmd += ["-f", str(fonte.diretorio / "docker-compose.prod.yml")]
+        for arquivo in fonte.compose_prod:
+            cmd += ["-f", str(fonte.diretorio / arquivo)]
     return cmd
 
 
