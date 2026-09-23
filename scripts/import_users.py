@@ -119,7 +119,7 @@ def coletar(fonte: Fonte) -> list[tuple[str, str]]:
         "exec", "-T", fonte.servico,
         "psql", "-U", usuario, "-d", banco, "--csv", "-t", "-c", fonte.consulta,
     ]
-    resultado = subprocess.run(comando, capture_output=True, text=True)
+    resultado = subprocess.run(comando, capture_output=True, text=True, encoding="utf-8")
     if resultado.returncode != 0:
         erro = (resultado.stderr or resultado.stdout).strip()
         raise RuntimeError(
