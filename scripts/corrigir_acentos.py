@@ -130,8 +130,13 @@ def compose(fonte: Fonte, prod: bool) -> list[str]:
 
 
 def rodar(fonte: Fonte, prod: bool, args: list[str], entrada: bytes | None = None) -> str:
-    r = subprocess.run(compose(fonte, prod) + args, cwd=fonte.diretorio,
-                       input=entrada, capture_output=True)
+    if not fonte.diretorio.is_dir():
+        raise RuntimeError(f"[{fonte.rotulo}] pasta nao encontrada: {fonte.diretorio}")
+    try:
+        r = subprocess.run(compose(fonte, prod) + args, cwd=fonte.diretorio,
+                           input=entrada, capture_output=True)
+    except OSError as e:
+        raise RuntimeError(f"[{fonte.rotulo}] nao consegui rodar o docker: {e}") from e
     if r.returncode != 0:
         erro = (r.stderr or r.stdout).decode("utf-8", "replace").strip()
         raise RuntimeError(f"[{fonte.rotulo}] {erro}")
@@ -304,7 +309,13 @@ def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = construir_argumentos()
-    alvos = [f for f in FONTES if not args.sistema or f.rotulo in args.sistema]
+    if args.sistema:
+        alvos = [f for f in FONTES if f.rotulo in args.sistema]
+    else:
+        alvos = [f for f in FONTES if f.diretorio.is_dir()]
+    for f in FONTES:
+        if not f.diretorio.is_dir():
+            print(f"aviso: {f.rotulo} ignorado, pasta nao encontrada: {f.diretorio}")
 
     dic = Dicionario()
     for palavra in PALAVRAS_COMUNS.split():
@@ -324,7 +335,7 @@ def main() -> int:
             if fonte in alvos:
                 print(f"ERRO: {e}\n  Suba o banco: cd {fonte.diretorio.name} && docker compose up -d {fonte.servico}")
                 return 1
-            print(f"aviso: {fonte.rotulo} fora do ar, dicionario sem as palavras dele")
+            print(f"aviso: {e} — dicionario segue sem as palavras dele")
 
     args.saida.mkdir(exist_ok=True)
     for fonte in alvos:
