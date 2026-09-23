@@ -114,7 +114,18 @@ estável imóvel imóveis móvel móveis automóvel papéis anéis hotéis
 são joão josé maria antônio antônia conceição fortaleza ceará paraná
 maranhão pará piauí amapá goiás espírito brasília são paulo belém
 cícero jônatas márcio lúcia luís cláudio cláudia sérgio fábio flávio
-vitória glória mônica patrícia letícia júlia júlio rogério otávio
+vitória glória mônica patrícia letícia júlia júlio rogério otávio andré
+avançado avançados estratégica estratégico estações fluviométricas hídricos hídrica
+fiscalizações necessários necessário necessária consecução logístico logística
+perfuração orçamentárias orçamentário terceirização disposições legislações
+aprovações piatã concorrência balneário âmbito convênio convênios urbanística
+precárias precário inspeções diagnóstico diagnósticos prognóstico quantificação
+política habitação habitacional viabilização famílias residências território
+parâmetros exigências intervenções secretária secretário socioeconômico
+hidrográficas hidrográfica caráter subsidiário temporário acessórias competências
+finalísticas núcleos núcleo convocatório rodoviária rodoviário jurisdição
+superintendência penitenciária habilitação pregão adesão regiões licitatório
+edificações públicas equipamentos são caetano itapuã goiás alagoas
 """
 
 
@@ -217,7 +228,8 @@ def valores_estragados(fonte: Fonte, prod: bool, colunas: list[Coluna]) -> list[
         return []
     partes = [
         f"SELECT {i}, {ident(c.pk)}::text, {ident(c.coluna)} FROM {ident(c.tabela)} "
-        f"WHERE {ident(c.coluna)} ~ '[[:alpha:]]\\?|\\?[[:alpha:]]'"
+        f"WHERE {ident(c.coluna)} ~ '[[:alnum:]]\\?|\\?[[:alpha:]]|\\?\\?' "
+        f"OR {ident(c.coluna)} ~* '{'|'.join(k for k in TROCAS_CONHECIDAS if '?' not in k)}'"
         for i, c in enumerate(colunas)
     ]
     linhas = sql(fonte, prod, " UNION ALL ".join(partes) + ";")
@@ -243,7 +255,10 @@ class Dicionario:
         self.duplo["".join("??" if ch in ACENTUADAS else ch for ch in palavra)][palavra] += peso
 
     def buscar(self, esqueleto: str) -> str | None:
-        for tabela in (self.simples, self.duplo):
+        # Sequencias pares de "?" (o caso deste banco) tentam primeiro 2 por letra.
+        pares = all(len(r) % 2 == 0 for r in re.findall(r"\?+", esqueleto))
+        ordem = (self.duplo, self.simples) if pares else (self.simples, self.duplo)
+        for tabela in ordem:
             candidatos = tabela.get(esqueleto)
             if not candidatos:
                 continue
@@ -256,6 +271,14 @@ class Dicionario:
 
 def por_sufixo(esqueleto: str) -> str | None:
     """Regras seguras para quando a palavra nao esta no dicionario."""
+    # dois "?" por letra
+    if esqueleto.count("?") == 4 and re.search(r"\w\?\?\?\?o$", esqueleto):
+        return esqueleto[:-5] + "ção"
+    if esqueleto.count("?") == 4 and re.search(r"\w\?\?\?\?es$", esqueleto):
+        return esqueleto[:-6] + "ções"
+    if esqueleto.count("?") == 2 and re.search(r"\w\?\?ncias?$", esqueleto):
+        return esqueleto.replace("??", "ê")
+    # um "?" por letra
     if esqueleto.count("?") == 2 and esqueleto.endswith("??o") and len(esqueleto) > 4:
         return esqueleto[:-3] + "ção"
     if esqueleto.count("?") == 2 and esqueleto.endswith("??es") and len(esqueleto) > 5:
@@ -275,11 +298,46 @@ def aplicar_caixa(original: str, nova: str, inicio_frase: bool) -> str:
     return nova
 
 
+def _caixa_do_vizinho(vizinho: str, maiuscula: str) -> str:
+    return maiuscula if not vizinho or vizinho.isupper() else maiuscula.lower()
+
+
+def _crase_ou_e(m: re.Match) -> str:
+    # "INSTRUMENTO ?? A PRESTACAO" -> É ; "VISANDO ?? ELABORACAO" -> À
+    prox = m.group(1)
+    letra = "É" if prox.upper() in {"A", "O", "AS", "OS", "UM", "UMA"} else "À"
+    return _caixa_do_vizinho(prox, letra) + " " + prox
+
+
+# Simbolos que viraram "??"/"???" (dois ou tres bytes em UTF-8).
+SIMBOLOS = [
+    (re.compile(r"(?<=\d)\?\?"), "º"),                                   # 15?? BPM, 1?? ANO
+    (re.compile(r"(?<![^\W\d_])([Nn])\?\?(?=\s*\d|\s|$)"), r"\1º"),      # N?? 006/2022
+    (re.compile(r"(?<=\d)([A-Da-d])\?\?"), r"\1ª"),                      # 11D?? CAMPANHA
+    (re.compile(r"(?<![\w?])\?\?\?(?![\w?])"), "–"),                     # ??? DIURB ???
+]
+CRASE_S = re.compile(r"(?<![\w?])\?\?([Ss])(?![\w?])")                   # ??S NECESSIDADES
+CRASE = re.compile(r"(?<![\w?])\?\?\s+(\w+)")
+
+# Palavras estragadas por uma correcao antiga ("??O" trocado as cegas por "ÇÃO").
+TROCAS_CONHECIDAS = {
+    "pregção": "pregão", "adesção": "adesão", "regições": "regiões",
+    "medi??ao": "medição",
+}
+
+
 def corrigir_texto(texto: str, dic: Dicionario) -> tuple[str, list[str]]:
     pendentes: list[str] = []
+    for padrao, troca_simbolo in SIMBOLOS:
+        texto = padrao.sub(troca_simbolo, texto)
+    texto = CRASE_S.sub(lambda m: _caixa_do_vizinho(m.group(1), "À") + m.group(1), texto)
+    texto = CRASE.sub(_crase_ou_e, texto)
 
     def troca(m: re.Match) -> str:
         token = m.group(0)
+        conhecida = TROCAS_CONHECIDAS.get(token.lower())
+        if conhecida:
+            return aplicar_caixa(token, conhecida, False)
         if "?" not in token or not any(ch.isalpha() for ch in token):
             return token
         # "Pago?" / "Pago??": interrogacao de verdade no fim da palavra
