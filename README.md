@@ -351,6 +351,14 @@ porta publicada pelo compose e o redirect URI gravado no realm.
 | Receita | `docker-compose.prod.yml` | `RECEITA_PORT` — **use o valor que `WEB_PORT` tinha** (tipicamente 80) |
 | Despesa (radar) | fixo no compose | `DESPESA_PORT` (3010) |
 | Controle de Despesa | `docker-compose.yml` dele | `CONTROLE_DESPESA_PORT` (3050) |
+| Controle Financeiro | `docker-compose.yml` dele | `CONTROLE_FINANCEIRO_PORT` (3060) |
+
+**O Controle Financeiro lê a Receita e o Controle pelas APIs `/api/v1`** (token Bearer). Os
+tokens nascem no `.env` de quem expõe a API — `SYNC_API_TOKEN` na receita e
+`CONTROLE_SYNC_API_TOKEN` no controle — e o `scripts/sync_host_ip.py` copia
+para `RECEITA_API_TOKEN` e `CONTROLE_API_TOKEN` no `.env` do controle financeiro. Gere cada
+um com `openssl rand -hex 32`. Sem eles o Controle Financeiro sobe, mas a sincronização
+fica registrada como "não configurada".
 
 **A despesa muda de porta:** backend 8000 → **8010**, frontend 3000 → **3010**,
 porque colidiam com o inventário. Ajuste o firewall e avise quem tem favorito.

@@ -34,6 +34,7 @@ INVENTARIO = PROJETOS / "Gerenciamento_de_inventario"
 RECEITA = PROJETOS / "Gerencimento_de_receita"
 DESPESA = PROJETOS / "Sistema_Despesa"
 CONTROLE = PROJETOS / "Controle_Despesa"
+FINANCEIRO = PROJETOS / "Controle_Financeiro"
 
 
 @dataclass(frozen=True)
@@ -120,14 +121,42 @@ COPIAS = [
           "seletor de sistemas"),
     Copia(DESPESA / ".env", "CONTROLE_DESPESA_PORT", "CONTROLE_DESPESA_PORT",
           "seletor de sistemas"),
+
+    # --- Controle Financeiro (o sexto sistema) -------------------------------------------
+    Copia(FINANCEIRO / ".env", "HOST_IP", "HOST_IP", "issuer do realm e endereço das APIs"),
+    Copia(FINANCEIRO / ".env", "ADMIN_MESTRE_EMAIL", "ADMIN_MESTRE_EMAIL",
+          "conta que administra os sistemas"),
+    Copia(FINANCEIRO / ".env", "CONTROLE_FINANCEIRO_CLIENT_SECRET", "CONTROLE_FINANCEIRO_CLIENT_SECRET",
+          "segredo do client controle-financeiro-web"),
+    Copia(FINANCEIRO / ".env", "CONTROLE_FINANCEIRO_PORT", "CONTROLE_FINANCEIRO_PORT",
+          "porta publicada (= CONTROLE_FINANCEIRO_PORT no realm)"),
+    Copia(FINANCEIRO / ".env", "PORTAL_PORT", "PORTAL_PORT", "atalho para o portal"),
+    Copia(FINANCEIRO / ".env", "INVENTARIO_PORT", "INVENTARIO_PORT", "seletor de sistemas"),
+    Copia(FINANCEIRO / ".env", "RECEITA_PORT", "RECEITA_PORT", "seletor de sistemas e API da receita"),
+    Copia(FINANCEIRO / ".env", "DESPESA_PORT", "DESPESA_PORT", "seletor de sistemas"),
+    Copia(FINANCEIRO / ".env", "CONTROLE_DESPESA_PORT", "CONTROLE_DESPESA_PORT",
+          "seletor de sistemas e API do controle"),
+    # Os outros cinco tambem precisam saber onde ela fica.
+    Copia(INVENTARIO / ".env", "CONTROLE_FINANCEIRO_PORT", "CONTROLE_FINANCEIRO_PORT", "seletor de sistemas"),
+    Copia(RECEITA / ".env", "CONTROLE_FINANCEIRO_PORT", "CONTROLE_FINANCEIRO_PORT", "seletor de sistemas"),
+    Copia(DESPESA / ".env", "CONTROLE_FINANCEIRO_PORT", "CONTROLE_FINANCEIRO_PORT", "seletor de sistemas"),
+    Copia(CONTROLE / ".env", "CONTROLE_FINANCEIRO_PORT", "CONTROLE_FINANCEIRO_PORT", "seletor de sistemas"),
 ]
 
-# O token da API de sync nasce no .env da receita (ela e a dona) e o inventario
-# precisa do mesmo valor. Nao passa pelo infra/.env.
-TOKEN_SYNC = Copia(
-    INVENTARIO / ".env", "SYNC_API_TOKEN", "RECEITA_API_TOKEN",
-    "token da API de sincronizacao (nasce no .env da receita)"
-)
+# Os tokens das APIs de sync nascem no .env de quem expõe a API (receita e
+# controle) e vão para quem consome (inventário e controle financeiro). Não passam pelo
+# infra/.env. (origem .env, chave lá, cópia)
+TOKENS_SYNC = [
+    (RECEITA / ".env", "SYNC_API_TOKEN", Copia(
+        INVENTARIO / ".env", "SYNC_API_TOKEN", "RECEITA_API_TOKEN",
+        "token da API da receita (nasce no .env da receita)")),
+    (RECEITA / ".env", "SYNC_API_TOKEN", Copia(
+        FINANCEIRO / ".env", "SYNC_API_TOKEN", "RECEITA_API_TOKEN",
+        "token da API da receita (nasce no .env da receita)")),
+    (CONTROLE / ".env", "CONTROLE_SYNC_API_TOKEN", Copia(
+        FINANCEIRO / ".env", "CONTROLE_SYNC_API_TOKEN", "CONTROLE_API_TOKEN",
+        "token da API do controle (nasce no .env do controle)")),
+]
 
 
 def ler_env(caminho: Path) -> dict[str, str]:
@@ -222,22 +251,21 @@ def main() -> int:
             f"    {nome:<26} {resultado}"
         )
 
-    # Token da API de sync: a fonte e o .env da receita, nao o do infra.
-    receita_env = ler_env(RECEITA / ".env")
-    token = receita_env.get(TOKEN_SYNC.origem)
-    if token:
-        resultado = escrever(
-            TOKEN_SYNC.destino, TOKEN_SYNC.nome_destino, token, args.check
-        )
+    # Tokens das APIs de sync: a fonte e o .env de quem expoe a API.
+    for origem_env, chave, copia in TOKENS_SYNC:
+        token = ler_env(origem_env).get(chave)
+        if not token:
+            print(
+                f"AVISO: {chave} nao esta em {origem_env.parent.name}/.env — "
+                f"{copia.destino.parent.name} nao vai autenticar no sync.\n"
+                "  Gere com: openssl rand -hex 32\n"
+            )
+            continue
+        resultado = escrever(copia.destino, copia.nome_destino, token, args.check)
         if resultado.startswith(("DIVERGENTE", "AUSENTE")):
             divergiu = True
-        por_destino.setdefault(TOKEN_SYNC.destino, []).append(
-            f"    {TOKEN_SYNC.nome_destino:<26} {resultado}"
-        )
-    else:
-        print(
-            "AVISO: SYNC_API_TOKEN nao esta no .env da receita — o sync de\n"
-            "  centros de custo nao vai autenticar. Gere com: openssl rand -hex 32\n"
+        por_destino.setdefault(copia.destino, []).append(
+            f"    {copia.nome_destino:<26} {resultado}"
         )
 
     for destino, linhas in por_destino.items():

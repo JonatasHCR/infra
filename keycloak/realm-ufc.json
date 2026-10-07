@@ -37,6 +37,10 @@
     {
      "name": "controle-despesa",
      "path": "/apps/controle-despesa"
+    },
+    {
+     "name": "controle-financeiro",
+     "path": "/apps/controle-financeiro"
     }
    ]
   },
@@ -239,6 +243,44 @@
    ],
    "webOrigins": [
     "http://${HOST_IP}:${CONTROLE_DESPESA_PORT}"
+   ],
+   "attributes": {
+    "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
+   },
+   "protocolMappers": [
+    {
+     "name": "groups",
+     "protocol": "openid-connect",
+     "protocolMapper": "oidc-group-membership-mapper",
+     "consentRequired": false,
+     "config": {
+      "full.path": "true",
+      "claim.name": "groups",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "userinfo.token.claim": "true",
+      "introspection.token.claim": "true"
+     }
+    }
+   ]
+  },
+  {
+   "clientId": "controle-financeiro-web",
+   "name": "Controle Financeiro",
+   "enabled": true,
+   "protocol": "openid-connect",
+   "publicClient": false,
+   "secret": "${CONTROLE_FINANCEIRO_CLIENT_SECRET}",
+   "standardFlowEnabled": true,
+   "directAccessGrantsEnabled": false,
+   "serviceAccountsEnabled": false,
+   "implicitFlowEnabled": false,
+   "redirectUris": [
+    "http://${HOST_IP}:${CONTROLE_FINANCEIRO_PORT}/auth/callback",
+    "http://${HOST_IP}:${CONTROLE_FINANCEIRO_PORT}/"
+   ],
+   "webOrigins": [
+    "http://${HOST_IP}:${CONTROLE_FINANCEIRO_PORT}"
    ],
    "attributes": {
     "post.logout.redirect.uris": "http://${HOST_IP}:${PORTAL_PORT}/*"
