@@ -45,6 +45,12 @@ export function sistemas(): Sistema[] {
       descricao: 'Despesas por centro de custo, com importacao de planilha e relatorios.',
       url: `${host}:${process.env.CONTROLE_DESPESA_PORT ?? '3050'}`,
     },
+    {
+      grupo: '/apps/controle-financeiro',
+      nome: 'Controle Financeiro',
+      descricao: 'Receita × custo por contrato, tendência, markup e relatórios em PDF.',
+      url: `${host}:${process.env.CONTROLE_FINANCEIRO_PORT ?? '3060'}`,
+    },
   ]
 }
 

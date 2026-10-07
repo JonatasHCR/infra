@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cria (ou acerta) a conta mestra do realm ufc — a que administra os tres
+"""Cria (ou acerta) a conta mestra do realm ufc — a que administra todos os
 sistemas com um login so.
 
 Por que um script e nao o realm-ufc.json:
@@ -15,9 +15,9 @@ Por que um script e nao o realm-ufc.json:
 E idempotente: rodar de novo em cima de uma conta que ja existe apenas
 reconfirma grupos e senha.  Nao mexe em nenhuma outra conta.
 
-O que esta conta e:  a MESMA pessoa sendo admin do inventario, da despesa e da
-receita.  Os tres backends a reconhecem pelo email, comparado com
-ADMIN_MESTRE_EMAIL do .env de cada um.
+O que esta conta e:  a MESMA pessoa sendo admin do inventario, do radar, da
+receita, do controle de despesa e do controle financeiro.  Todos a reconhecem pelo email,
+comparado com ADMIN_MESTRE_EMAIL do .env de cada um.
 
 O que esta conta NAO e:  um papel do Keycloak.  Ser admin do console (KC_ADMIN,
 realm master) nao da poder nenhum dentro dos sistemas, e nenhum grupo concede
@@ -49,6 +49,7 @@ GRUPOS = [
     "/apps/receita",
     "/apps/despesa",
     "/apps/controle-despesa",
+    "/apps/controle-financeiro",
 ]
 
 
@@ -71,7 +72,7 @@ def main() -> int:
     if not email:
         sys.exit(
             "ERRO: ADMIN_MESTRE_EMAIL vazio em infra/.env.\n"
-            "      Sem ele nao ha conta mestra — e os tres sistemas continuam\n"
+            "      Sem ele nao ha conta mestra — e os sistemas continuam\n"
             "      dependendo de promover um admin em cada um pela linha de comando."
         )
     if not senha:
@@ -79,7 +80,7 @@ def main() -> int:
     if len(senha) < 12:
         sys.exit(
             f"ERRO: ADMIN_MESTRE_SENHA tem {len(senha)} caracteres.\n"
-            "      Esta conta administra os tres sistemas de uma vez; use ao menos 12."
+            "      Esta conta administra todos os sistemas de uma vez; use ao menos 12."
         )
 
     base = f"http://{host_ip}:8080"
